@@ -1,18 +1,3 @@
-# app.py
-"""
-Folk Arts Portal - Single-file Streamlit app with local secure authentication.
-Run: streamlit run app.py
-
-Dependencies: streamlit (pip install streamlit)
-Optional: openai (pip install openai) to enable chatbot features.
-
-Security notes:
-- Passwords are hashed with PBKDF2-HMAC-SHA256 and per-user salt (no plain text storage).
-- Sessions are managed in-memory (Streamlit session_state) and optionally via a local
-  .session_token file for "remember me" convenience on the same machine.
-- This is appropriate for local dev and lightweight deployments. For public deployments,
-  use HTTPS, a managed auth provider, and stronger secrets management.
-"""
 import streamlit as st
 import os
 import sqlite3
@@ -626,4 +611,4 @@ else:
     st.write("Page not found.")
 
 st.markdown("---")
-st.markdown("© Folk Arts Portal • Built with Streamlit — extend freely.")
+st.markdown("© Folk Arts Portal• Built with Streamlit — extend freely.")

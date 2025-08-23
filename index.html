@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ArtistHub - Showcase Your Art</title>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .verified-badge {
+            background: linear-gradient(45deg, #3b82f6, #1d4ed8);
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        .artwork-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .artwork-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+        .upload-area {
+            border: 2px dashed #d1d5db;
+            transition: all 0.3s ease;
+        }
+        .upload-area:hover {
+            border-color: #3b82f6;
+            background-color: #f8fafc;
+        }
+        .upload-area.dragover {
+            border-color: #1d4ed8;
+            background-color: #eff6ff;
+        }
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        #authModal {
+            backdrop-filter: blur(4px);
+        }
+        @media (max-width: 768px) {
+            .text-5xl { font-size: 2.5rem; }
+            .text-xl { font-size: 1.125rem; }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-purple-50 to-blue-50 min-h-screen">
+    <!-- Landing Page -->
+    <div id="landingPage" class="min-h-screen flex flex-col">
+        <!-- Header -->
+        <header class="bg-white shadow-sm">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center space-x-2">
+                        <div class="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg flex items-center justify-center">
+                            <span class="text-white font-bold text-sm">A</span>
+                        </div>
+                        <h1 class="text-2xl font-bold text-gray-900">ArtistHub</h1>
+                    </div>
+                    <button id="showLoginBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors">
+                        Login
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Hero Section -->
+        <main class="flex-1 flex items-center justify-center px-4">
+            <div class="max-w-4xl mx-auto text-center">
+                <h2 class="text-5xl font-bold text-gray-900 mb-6">
+                    Showcase Your Art to the World
+                </h2>
+                <p class="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
+                    Join our community of artists. Upload your artwork, get verified, and access export compliance guidance for international sales.
+                </p>
+                <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                    <button id="getStartedBtn" class="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-8 py-3 rounded-lg font-medium text-lg transition-all transform hover:scale-105">
+                        Get Started
+                    </button>
+                    <button id="learnMoreBtn" class="border-2 border-gray-300 hover:border-gray-400 text-gray-700 px-8 py-3 rounded-lg font-medium text-lg transition-colors">
+                        Learn More
+                    </button>
+                </div>
+            </div>
+        </main>
+
+        <!-- Features Section -->
+        <section class="py-16 bg-white">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <h3 class="text-3xl font-bold text-center text-gray-900 mb-12">Why Choose ArtistHub?</h3>
+                <div class="grid md:grid-cols-3 gap-8">
+                    <div class="text-center p-6">
+                        <div class="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <span class="text-2xl">🎨</span>
+                        </div>
+                        <h4 class="text-xl font-semibold mb-2">Upload Artwork</h4>
+                        <p class="text-gray-600">Easily upload and showcase your digital art with titles and descriptions.</p>
+                    </div>
+                    <div class="text-center p-6">
+                        <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <span class="text-2xl">✅</span>
+                        </div>
+                        <h4 class="text-xl font-semibold mb-2">Get Verified</h4>
+                        <p class="text-gray-600">Upload 3+ artworks to earn your verified artist badge.</p>
+                    </div>
+                    <div class="text-center p-6">
+                        <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <span class="text-2xl">📋</span>
+                        </div>
+                        <h4 class="text-xl font-semibold mb-2">Export Guidance</h4>
+                        <p class="text-gray-600">Access compliance guidelines for international art sales.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Auth Modal -->
+    <div id="authModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-white rounded-xl p-8 max-w-md w-full relative">
+            <div class="text-center mb-6">
+                <h3 id="authTitle" class="text-2xl font-bold text-gray-900">Welcome Back</h3>
+                <p class="text-gray-600 mt-2">Sign in to your artist account</p>
+            </div>
+            
+            <form id="authForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                    <input type="email" id="email" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                    <input type="password" id="password" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                </div>
+                <button type="submit" id="authSubmitBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-medium transition-colors">
+                    Sign In
+                </button>
+            </form>
+            
+            <div class="mt-4 text-center">
+                <p class="text-sm text-gray-600">
+                    <span id="authSwitchText">Don't have an account?</span>
+                    <button id="authSwitchBtn" class="text-blue-600 hover:text-blue-700 font-medium ml-1">Sign up</button>
+                </p>
+            </div>
+            
+            <button id="closeAuthModal" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+                <span class="text-2xl">&times;</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Dashboard -->
+    <div id="dashboard" class="hidden min-h-screen bg-gradient-to-br from-purple-50 to-blue-50">
+        <!-- Dashboard Header -->
+        <header class="bg-white shadow-sm">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center space-x-4">
+                        <div class="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg flex items-center justify-center">
+                            <span class="text-white font-bold text-sm">A</span>
+                        </div>
+                        <div>
+                            <h1 class="text-xl font-bold text-gray-900">Artist Dashboard</h1>
+                            <div class="flex items-center space-x-2">
+                                <span id="userEmail" class="text-sm text-gray-600"></span>
+                                <div id="verifiedBadge" class="hidden verified-badge text-white text-xs px-2 py-1 rounded-full font-medium">
+                                    ✓ Verified
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <button id="logoutBtn" class="text-gray-600 hover:text-gray-800 px-4 py-2 rounded-lg transition-colors">
+                        Logout
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <!-- Upload Section -->
+            <div class="bg-white rounded-xl shadow-sm p-6 mb-8">
+                <h2 class="text-2xl font-bold text-gray-900 mb-6">Upload New Artwork</h2>
+                
+                <form id="uploadForm" class="space-y-6">
+                    <div class="upload-area rounded-lg p-8 text-center cursor-pointer" id="uploadArea">
+                        <input type="file" id="artworkFile" accept="image/*" class="hidden">
+                        <div id="uploadPlaceholder">
+                            <div class="text-4xl mb-4">🎨</div>
+                            <p class="text-lg font-medium text-gray-700 mb-2">Click to upload artwork</p>
+                            <p class="text-sm text-gray-500">or drag and drop your image here</p>
+                        </div>
+                        <div id="uploadPreview" class="hidden">
+                            <img id="previewImage" class="max-w-full max-h-64 mx-auto rounded-lg">
+                            <p class="mt-2 text-sm text-gray-600">Click to change image</p>
+                        </div>
+                    </div>
+                    
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Artwork Title</label>
+                            <input type="text" id="artworkTitle" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Enter artwork title">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                            <textarea id="artworkDescription" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Describe your artwork"></textarea>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" id="uploadBtn" class="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed">
+                        Upload Artwork
+                    </button>
+                </form>
+            </div>
+
+            <!-- Gallery Section -->
+            <div class="bg-white rounded-xl shadow-sm p-6 mb-8">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-gray-900">My Gallery</h2>
+                    <div class="text-sm text-gray-600">
+                        <span id="artworkCount">0</span> artworks uploaded
+                    </div>
+                </div>
+                
+                <div id="galleryGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div id="emptyGallery" class="col-span-full text-center py-12">
+                        <div class="text-6xl mb-4">🖼️</div>
+                        <h3 class="text-xl font-medium text-gray-700 mb-2">No artworks yet</h3>
+                        <p class="text-gray-500">Upload your first artwork to get started!</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Export Compliance Section -->
+            <div class="bg-white rounded-xl shadow-sm p-6">
+                <h2 class="text-2xl font-bold text-gray-900 mb-6">Export Compliance Guidance</h2>
+                
+                <div class="grid md:grid-cols-2 gap-8">
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">International Sales Guidelines</h3>
+                        <ul class="space-y-3 text-gray-600">
+                            <li class="flex items-start space-x-2">
+                                <span class="text-green-500 mt-1">✓</span>
+                                <span>Ensure artwork originality and ownership documentation</span>
+                            </li>
+                            <li class="flex items-start space-x-2">
+                                <span class="text-green-500 mt-1">✓</span>
+                                <span>Include proper invoicing with artwork details</span>
+                            </li>
+                            <li class="flex items-start space-x-2">
+                                <span class="text-green-500 mt-1">✓</span>
+                                <span>Check destination country import regulations</span>
+                            </li>
+                            <li class="flex items-start space-x-2">
+                                <span class="text-green-500 mt-1">✓</span>
+                                <span>Consider insurance for valuable pieces</span>
+                            </li>
+                        </ul>
+                    </div>
+                    
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">Required Documentation</h3>
+                        <div class="bg-gray-50 rounded-lg p-4 mb-4">
+                            <p class="text-sm text-gray-600 mb-3">Download our comprehensive checklist to ensure compliance with international art export regulations.</p>
+                            <button id="downloadChecklistBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                                📋 Download Checklist PDF
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Firebase Configuration (Replace with your config)
+        const firebaseConfig = {
+            apiKey: "demo-key",
+            authDomain: "demo-project.firebaseapp.com",
+            projectId: "demo-project",
+            storageBucket: "demo-project.appspot.com",
+            messagingSenderId: "123456789",
+            appId: "demo-app-id"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+        const storage = firebase.storage();
+
+        // DOM Elements
+        const landingPage = document.getElementById('landingPage');
+        const dashboard = document.getElementById('dashboard');
+        const authModal = document.getElementById('authModal');
+        const authForm = document.getElementById('authForm');
+        const uploadForm = document.getElementById('uploadForm');
+        const galleryGrid = document.getElementById('galleryGrid');
+        const emptyGallery = document.getElementById('emptyGallery');
+
+        // State
+        let isSignUp = false;
+        let currentUser = null;
+        let userArtworks = [];
+
+        // Auth State Observer
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                currentUser = user;
+                showDashboard();
+                loadUserArtworks();
+            } else {
+                currentUser = null;
+                showLanding();
+            }
+        });
+
+        // Event Listeners
+        document.getElementById('showLoginBtn').addEventListener('click', () => {
+            showAuthModal(false);
+        });
+
+        document.getElementById('getStartedBtn').addEventListener('click', () => {
+            showAuthModal(true);
+        });
+
+        document.getElementById('learnMoreBtn').addEventListener('click', () => {
+            document.querySelector('section').scrollIntoView({ behavior: 'smooth' });
+        });
+
+        document.getElementById('closeAuthModal').addEventListener('click', hideAuthModal);
+
+        document.getElementById('authSwitchBtn').addEventListener('click', () => {
+            isSignUp = !isSignUp;
+            updateAuthModal();
+        });
+
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            auth.signOut();
+        });
+
+        // Auth Form Handler
+        authForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const submitBtn = document.getElementById('authSubmitBtn');
+            
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = isSignUp ? '<span class="loading"></span> Creating Account...' : '<span class="loading"></span> Signing In...';
+
+            try {
+                if (isSignUp) {
+                    await auth.createUserWithEmailAndPassword(email, password);
+                } else {
+                    await auth.signInWithEmailAndPassword(email, password);
+                }
+                hideAuthModal();
+            } catch (error) {
+                alert(error.message);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = isSignUp ? 'Create Account' : 'Sign In';
+            }
+        });
+
+        // Upload Form Handler
+        uploadForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const file = document.getElementById('artworkFile').files[0];
+            const title = document.getElementById('artworkTitle').value;
+            const description = document.getElementById('artworkDescription').value;
+            
+            if (!file || !title) {
+                alert('Please select an image and enter a title');
+                return;
+            }
+
+            const uploadBtn = document.getElementById('uploadBtn');
+            uploadBtn.disabled = true;
+            uploadBtn.innerHTML = '<span class="loading"></span> Uploading...';
+
+            try {
+                // Create artwork object (in real app, you'd upload to Firebase Storage)
+                const artwork = {
+                    id: Date.now().toString(),
+                    title: title,
+                    description: description,
+                    imageUrl: URL.createObjectURL(file), // Demo URL
+                    userId: currentUser.uid,
+                    createdAt: new Date()
+                };
+
+                // Add to local storage (demo - would use real Firebase)
+                userArtworks.push(artwork);
+                
+                // Reset form
+                uploadForm.reset();
+                document.getElementById('uploadPreview').classList.add('hidden');
+                document.getElementById('uploadPlaceholder').classList.remove('hidden');
+                
+                // Refresh gallery
+                renderGallery();
+                checkVerificationStatus();
+                
+                alert('Artwork uploaded successfully!');
+            } catch (error) {
+                alert('Upload failed: ' + error.message);
+            } finally {
+                uploadBtn.disabled = false;
+                uploadBtn.textContent = 'Upload Artwork';
+            }
+        });
+
+        // File Upload Handler
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('artworkFile');
+
+        uploadArea.addEventListener('click', () => fileInput.click());
+
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                fileInput.files = files;
+                handleFileSelect();
+            }
+        });
+
+        fileInput.addEventListener('change', handleFileSelect);
+
+        function handleFileSelect() {
+            const file = fileInput.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    document.getElementById('previewImage').src = e.target.result;
+                    document.getElementById('uploadPlaceholder').classList.add('hidden');
+                    document.getElementById('uploadPreview').classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // Download Checklist Handler
+        document.getElementById('downloadChecklistBtn').addEventListener('click', () => {
+            const checklistContent = `
+EXPORT COMPLIANCE CHECKLIST FOR ARTISTS
+
+□ Artwork Originality Certificate
+□ Proof of Ownership Documentation  
+□ Commercial Invoice with Artwork Details
+□ Destination Country Import Regulations Check
+□ Insurance Documentation (if applicable)
+□ Packaging and Shipping Requirements
+□ Cultural Property Export Permits (if required)
+□ Tax Documentation
+
+For more information, visit: artisthub.com/compliance
+            `;
+            
+            const blob = new Blob([checklistContent], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'export-compliance-checklist.txt';
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+
+        // Helper Functions
+        function showAuthModal(signUp = false) {
+            isSignUp = signUp;
+            updateAuthModal();
+            authModal.classList.remove('hidden');
+        }
+
+        function hideAuthModal() {
+            authModal.classList.add('hidden');
+            authForm.reset();
+        }
+
+        function updateAuthModal() {
+            const title = document.getElementById('authTitle');
+            const submitBtn = document.getElementById('authSubmitBtn');
+            const switchText = document.getElementById('authSwitchText');
+            const switchBtn = document.getElementById('authSwitchBtn');
+
+            if (isSignUp) {
+                title.textContent = 'Join ArtistHub';
+                submitBtn.textContent = 'Create Account';
+                switchText.textContent = 'Already have an account?';
+                switchBtn.textContent = 'Sign in';
+            } else {
+                title.textContent = 'Welcome Back';
+                submitBtn.textContent = 'Sign In';
+                switchText.textContent = "Don't have an account?";
+                switchBtn.textContent = 'Sign up';
+            }
+        }
+
+        function showLanding() {
+            landingPage.classList.remove('hidden');
+            dashboard.classList.add('hidden');
+        }
+
+        function showDashboard() {
+            landingPage.classList.add('hidden');
+            dashboard.classList.remove('hidden');
+            document.getElementById('userEmail').textContent = currentUser.email;
+        }
+
+        async function loadUserArtworks() {
+            // In real app, load from Firestore
+            // For demo, we'll use local storage simulation
+            userArtworks = JSON.parse(localStorage.getItem(`artworks_${currentUser.uid}`) || '[]');
+            renderGallery();
+            checkVerificationStatus();
+        }
+
+        function renderGallery() {
+            const count = userArtworks.length;
+            document.getElementById('artworkCount').textContent = count;
+
+            if (count === 0) {
+                emptyGallery.classList.remove('hidden');
+                galleryGrid.innerHTML = '';
+                galleryGrid.appendChild(emptyGallery);
+                return;
+            }
+
+            emptyGallery.classList.add('hidden');
+            galleryGrid.innerHTML = '';
+
+            userArtworks.forEach(artwork => {
+                const card = document.createElement('div');
+                card.className = 'artwork-card bg-white rounded-lg shadow-sm overflow-hidden';
+                card.innerHTML = `
+                    <img src="${artwork.imageUrl}" alt="${artwork.title}" class="w-full h-48 object-cover">
+                    <div class="p-4">
+                        <h3 class="font-semibold text-gray-900 mb-1">${artwork.title}</h3>
+                        <p class="text-sm text-gray-600 mb-2">${artwork.description || 'No description'}</p>
+                        <p class="text-xs text-gray-400">${new Date(artwork.createdAt).toLocaleDateString()}</p>
+                    </div>
+                `;
+                galleryGrid.appendChild(card);
+            });
+
+            // Save to localStorage (demo persistence)
+            localStorage.setItem(`artworks_${currentUser.uid}`, JSON.stringify(userArtworks));
+        }
+
+        function checkVerificationStatus() {
+            const badge = document.getElementById('verifiedBadge');
+            if (userArtworks.length >= 3) {
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            showLanding();
+        });
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9739c38402f87f49',t:'MTc1NTk0MzIzNS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
